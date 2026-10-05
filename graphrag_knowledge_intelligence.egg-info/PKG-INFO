@@ -1,0 +1,29 @@
+Metadata-Version: 2.4
+Name: graphrag-knowledge-intelligence
+Version: 0.1.0
+Summary: Multi-hop GraphRAG knowledge intelligence system powered by Groq
+Requires-Python: >=3.11
+Requires-Dist: fastapi
+Requires-Dist: uvicorn[standard]
+Requires-Dist: pydantic
+Requires-Dist: pydantic-settings
+Requires-Dist: python-dotenv
+Requires-Dist: groq
+Requires-Dist: langchain
+Requires-Dist: langchain-core
+Requires-Dist: langchain-groq
+Requires-Dist: langgraph
+Requires-Dist: sentence-transformers
+Requires-Dist: qdrant-client
+Requires-Dist: neo4j
+Requires-Dist: pymupdf
+Requires-Dist: beautifulsoup4
+Requires-Dist: markdown
+Requires-Dist: pandas
+Requires-Dist: httpx
+Requires-Dist: tenacity
+Requires-Dist: tiktoken
+Requires-Dist: pydantic-settings
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-asyncio; extra == "dev"

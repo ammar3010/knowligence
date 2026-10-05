@@ -1,0 +1,23 @@
+Microsoft is a technology company focused on software,
+cloud computing, artificial intelligence and enterprise
+technology.
+
+Microsoft operates Azure, a cloud computing platform used
+by organizations around the world.
+
+OpenAI develops artificial intelligence systems and large
+language models.
+
+Microsoft has invested in OpenAI and provides cloud
+infrastructure for OpenAI.
+
+Google operates Google Cloud and develops artificial
+intelligence technologies.
+
+Google and Microsoft compete across several areas of
+cloud computing and artificial intelligence.
+
+Amazon operates AWS, one of the largest cloud computing
+platforms.
+
+AWS competes with Microsoft Azure and Google Cloud.

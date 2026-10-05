@@ -1,0 +1,46 @@
+[project]
+name = "graphrag-knowledge-intelligence"
+version = "0.1.0"
+description = "Multi-hop GraphRAG knowledge intelligence system powered by Groq"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic",
+    "pydantic-settings",
+    "python-dotenv",
+
+    "groq",
+    "langchain",
+    "langchain-core",
+    "langchain-groq",
+    "langgraph",
+
+    "sentence-transformers",
+
+    "qdrant-client",
+    "neo4j",
+
+    "pymupdf",
+    "beautifulsoup4",
+    "markdown",
+    "pandas",
+
+    "httpx",
+    "tenacity",
+    "tiktoken",
+    "pydantic-settings",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+asyncio_mode = "auto"
