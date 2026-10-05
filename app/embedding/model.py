@@ -35,6 +35,8 @@ class EmbeddingModel:
 
     @property
     def dimension(self) -> int:
+        if hasattr(self.model, "get_embedding_dimension"):
+            return self.model.get_embedding_dimension()
         return self.model.get_sentence_embedding_dimension()
 
 

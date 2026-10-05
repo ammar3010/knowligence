@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import fitz
+import pymupdf as fitz
 
 from app.ingestion.loader import BaseDocumentLoader
 from app.models.documents import Document, DocumentType

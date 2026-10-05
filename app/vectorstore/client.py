@@ -1,8 +1,25 @@
+import uuid
+
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 
 from app.core.config import get_settings
 from app.models.documents import DocumentChunk
+
+
+def to_uuid(id_val: str) -> str:
+    try:
+        return str(uuid.UUID(id_val))
+    except (ValueError, AttributeError):
+        pass
+
+    if "_" in id_val:
+        try:
+            return str(uuid.UUID(hex=id_val.split("_", 1)[1]))
+        except (ValueError, AttributeError):
+            pass
+
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, str(id_val)))
 
 
 class QdrantVectorStore:
@@ -64,7 +81,7 @@ class QdrantVectorStore:
         ):
             points.append(
                 PointStruct(
-                    id=chunk.id,
+                    id=to_uuid(chunk.id),
                     vector=embedding,
                     payload={
                         "chunk_id": chunk.id,
