@@ -22,6 +22,19 @@ class Neo4jClient:
         except Exception:
             return False
 
+    def execute(
+        self,
+        query: str,
+        parameters: dict | None = None,
+    ):
+        with self.driver.session() as session:
+            result = session.run(
+                query,
+                parameters or {},
+            )
+
+            return result.data()
+
     def close(self) -> None:
         self.driver.close()
 

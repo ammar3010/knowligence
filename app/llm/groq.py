@@ -16,6 +16,7 @@ class GroqClient:
         )
 
         self.model = settings.groq_model
+        self.extraction_model = settings.groq_extraction_model
 
     def verify_connection(self) -> bool:
         try:
@@ -37,18 +38,18 @@ class GroqClient:
             return False
 
     def extract_graph(
-        self,
-        prompt: str,
-    ) -> GraphExtraction:
+    self,
+    prompt: str,
+) -> GraphExtraction:
 
         response = self.client.chat.completions.create(
-            model=self.model,
+            model=self.extraction_model,
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        "You extract structured knowledge "
-                        "graphs from text."
+                        "Extract entities and relationships from text. "
+                        "Return only valid JSON."
                     ),
                 },
                 {
@@ -57,14 +58,32 @@ class GroqClient:
                 },
             ],
             temperature=0,
-            response_format={
-                "type": "json_object"
-            },
+            max_tokens=1024,
         )
 
-        content = response.choices[0].message.content
+        choice = response.choices[0]
 
-        data = json.loads(content)
+        content = choice.message.content
+
+        print("Groq finish reason:", choice.finish_reason)
+        print("Groq response:", content)
+
+        if not content:
+            raise ValueError(
+                f"Groq returned an empty response. "
+                f"Finish reason: {choice.finish_reason}"
+            )
+
+        try:
+            data = json.loads(content)
+
+        except json.JSONDecodeError as exc:
+            print("Invalid Groq JSON:")
+            print(content)
+
+            raise ValueError(
+                "Groq returned invalid JSON."
+            ) from exc
 
         return GraphExtraction.model_validate(data)
 

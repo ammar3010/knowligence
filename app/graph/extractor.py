@@ -11,8 +11,6 @@ class GraphExtractor:
         chunk: DocumentChunk,
     ) -> GraphExtraction:
 
-        prompt = GRAPH_EXTRACTION_PROMPT.format(
-            text=chunk.content
-        )
+        prompt = GRAPH_EXTRACTION_PROMPT.replace("{text}", chunk.content)
 
         return groq_client.extract_graph(prompt)
