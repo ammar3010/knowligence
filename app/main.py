@@ -12,6 +12,8 @@ from app.graph.client import neo4j_client
 from app.llm.groq import groq_client
 from app.vectorstore.client import qdrant_client
 from app.api.routes import router as query_router
+from app.api.ingestion import router as ingestion_router
+from app.api.routes import router as query_router
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -35,6 +37,7 @@ app = FastAPI(
 )
 
 app.include_router(query_router)
+app.include_router(ingestion_router)
 
 @app.get("/")
 def root():

@@ -21,12 +21,15 @@ class GraphRepository:
             REQUIRE c.id IS UNIQUE
             """
         )
+        neo4j_client.execute(
+            """
+            CREATE CONSTRAINT document_id_unique IF NOT EXISTS
+            FOR (d:Document)
+            REQUIRE d.id IS UNIQUE
+            """
+        )
 
-    def store_chunk(
-        self,
-        chunk: DocumentChunk,
-    ) -> None:
-
+    def store_chunk(self, chunk: DocumentChunk) -> None:
         neo4j_client.execute(
             """
             MERGE (c:Chunk {id: $chunk_id})
@@ -37,6 +40,15 @@ class GraphRepository:
                 c.token_count = $token_count,
                 c.source = $source,
                 c.title = $title
+
+            WITH c
+
+            MERGE (d:Document {id: $document_id})
+            SET
+                d.title = $title,
+                d.source = $source
+
+            MERGE (d)-[:CONTAINS]->(c)
             """,
             {
                 "chunk_id": chunk.id,
@@ -124,3 +136,50 @@ class GraphRepository:
                     "chunk_id": chunk.id,
                 },
             )
+
+    def store_document(self, document) -> None:
+        neo4j_client.execute(
+            """
+            MERGE (d:Document {id: $document_id})
+            SET
+                d.title = $title,
+                d.source = $source,
+                d.source_type = $source_type,
+                d.created_at = $created_at
+            """,
+            {
+                "document_id": document.id,
+                "title": document.title,
+                "source": document.source,
+                "source_type": document.source_type.value,
+                "created_at": document.created_at.isoformat(),
+            },
+        )
+
+    def list_documents(self):
+        return neo4j_client.execute(
+            """
+            MATCH (d:Document)
+            OPTIONAL MATCH (d)-[:CONTAINS]->(c:Chunk)
+
+            RETURN
+                d.id AS document_id,
+                d.title AS title,
+                d.source AS source,
+                d.source_type AS source_type,
+                d.created_at AS created_at,
+                count(c) AS chunk_count
+
+            ORDER BY d.created_at DESC
+            """
+        )
+
+    def delete_document(self, document_id: str) -> None:
+        neo4j_client.execute(
+            """
+            MATCH (d:Document {id: $document_id})
+            OPTIONAL MATCH (d)-[:CONTAINS]->(c:Chunk)
+            DETACH DELETE d, c
+            """,
+            {"document_id": document_id},
+        )

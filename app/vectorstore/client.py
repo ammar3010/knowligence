@@ -142,6 +142,23 @@ class QdrantVectorStore:
         logger.debug("Qdrant search completed: collection=%s results=%d", self.collection_name, len(points))
         return points
 
+    def delete_document(self, document_id: str) -> None:
+        self.client.delete(
+            collection_name=self.collection_name,
+            points_selector={
+                "filter": {
+                    "must": [
+                        {
+                            "key": "document_id",
+                            "match": {
+                                "value": document_id,
+                            },
+                        }
+                    ]
+                }
+            },
+        )
+
     def close(self) -> None:
         self.client.close()
         logger.info("Qdrant client closed")

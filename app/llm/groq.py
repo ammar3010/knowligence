@@ -173,5 +173,35 @@ class GroqClient:
         logger.debug("Answer generation completed: answer_chars=%d", len(answer))
         return answer
 
+    def stream_answer(self, prompt: str):
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Answer questions using only the provided evidence. "
+                        "Do not invent information."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+            temperature=0,
+            max_tokens=2048,
+            stream=True,
+        )
+
+        for chunk in response:
+            if not chunk.choices:
+                continue
+
+            delta = chunk.choices[0].delta
+
+            if delta.content:
+                yield delta.content
+
 
 groq_client = GroqClient()
