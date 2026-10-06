@@ -20,9 +20,9 @@ class GraphRetriever:
         )
 
     def retrieve_relationships(
-    self,
-    entity_names: list[str],
-    max_hops: int = 2,
+        self,
+        entity_names: list[str],
+        max_hops: int = 2,
     ):
         if not entity_names:
             return []
@@ -30,8 +30,9 @@ class GraphRetriever:
         max_hops = max(1, min(max_hops, 4))
 
         query = f"""
-        MATCH path = (start:Entity)-[:RELATES_TO*1..{max_hops}]-(end:Entity)
+        MATCH path = (start:Entity)-[:RELATES_TO*1..{max_hops}]->(end:Entity)
         WHERE start.name IN $entity_names
+
         RETURN [
             node IN nodes(path) |
             {{
@@ -40,6 +41,7 @@ class GraphRetriever:
                 description: node.description
             }}
         ] AS entities,
+
         [
             relationship IN relationships(path) |
             {{

@@ -118,5 +118,32 @@ class GroqClient:
 
         return GraphExtraction.model_validate(data)
 
+    def generate_answer(self, prompt: str) -> str:
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Answer questions using only the provided evidence. "
+                        "Do not invent information."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+            temperature=0,
+            max_tokens=2048,
+        )
+
+        content = response.choices[0].message.content
+
+        if not content:
+            raise ValueError("Groq returned an empty answer.")
+
+        return content.strip()
+
 
 groq_client = GroqClient()
