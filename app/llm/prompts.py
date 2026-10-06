@@ -43,18 +43,23 @@ TEXT:
 ANSWER_PROMPT = """
 You are a knowledge intelligence assistant.
 
-Answer the user's question using ONLY the provided evidence.
+Answer the user's question using ONLY the provided evidence and conversation history.
 
 Strict grounding rules:
-- Every factual claim must be directly supported by the evidence.
+- Every factual claim about the knowledge base must be directly supported by the evidence.
 - Do NOT use outside knowledge.
 - Do NOT infer, assume, or expand relationships beyond what the evidence states.
 - Do NOT add facts that are merely plausible.
 - Preserve the exact meaning of the source evidence.
+- Use conversation history only to understand references and conversational context.
+- If the user refers to something like "it", "they", "that company", or "the previous one",
+  resolve the reference using conversation history.
 - For multi-hop questions, explicitly show each relationship in the chain.
 - If the evidence is insufficient to answer the question, say so.
 - Keep the answer concise and clear.
-- Cite the relevant evidence using the provided Graph Fact or Vector Result identifiers.
+
+CONVERSATION HISTORY:
+{chat_history}
 
 QUESTION:
 {query}

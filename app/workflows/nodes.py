@@ -32,8 +32,19 @@ def context_node(state: GraphRAGState) -> GraphRAGState:
     }
 
 def reasoning_node(state: GraphRAGState) -> GraphRAGState:
+    history = state.get("chat_history", [])
+
+    formatted_history = "\n".join(
+        f"{message.role.upper()}: {message.content}"
+        for message in history
+    )
+
+    if not formatted_history:
+        formatted_history = "No previous conversation."
+
     prompt = ANSWER_PROMPT.format(
         query=state["query"],
+        chat_history=formatted_history,
         context=state["context"],
     )
 

@@ -1,10 +1,9 @@
 from fastapi import FastAPI
-
 from app.core.config import get_settings
 from app.graph.client import neo4j_client
 from app.llm.groq import groq_client
 from app.vectorstore.client import qdrant_client
-
+from app.api.routes import router as query_router
 
 settings = get_settings()
 
@@ -13,6 +12,7 @@ app = FastAPI(
     version=settings.app_version,
 )
 
+app.include_router(query_router)
 
 @app.get("/")
 def root():
