@@ -37,6 +37,37 @@ class GroqClient:
             print(f"Groq connection failed: {exc}")
             return False
 
+    def extract_query_entities(self, prompt: str) -> list[str]:
+        response = self.client.chat.completions.create(
+            model=self.extraction_model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Extract named entities and return only valid JSON.",
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+            temperature=0,
+            max_tokens=256,
+        )
+
+        content = response.choices[0].message.content
+
+        if not content:
+            raise ValueError("Groq returned an empty response.")
+
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError as exc:
+            print("Invalid Groq JSON:")
+            print(content)
+            raise ValueError("Groq returned invalid JSON.") from exc
+
+        return data.get("entities", [])
+
     def extract_graph(
     self,
     prompt: str,
