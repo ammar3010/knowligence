@@ -1,9 +1,12 @@
 import json
+import logging
 
 from groq import Groq
 
 from app.core.config import get_settings
 from app.models.graph import GraphExtraction
+
+logger = logging.getLogger(__name__)
 
 
 class GroqClient:
@@ -33,12 +36,14 @@ class GroqClient:
 
             return bool(response.choices)
 
-        except Exception as exc:
-            print(f"Groq connection failed: {exc}")
+        except Exception:
+            logger.exception("Groq connectivity check failed")
             return False
 
     def extract_query_entities(self, prompt: str) -> list[str]:
-        response = self.client.chat.completions.create(
+        logger.debug("Requesting query entity extraction: model=%s", self.extraction_model)
+        try:
+            response = self.client.chat.completions.create(
             model=self.extraction_model,
             messages=[
                 {
@@ -52,28 +57,35 @@ class GroqClient:
             ],
             temperature=0,
             max_tokens=256,
-        )
+            )
+        except Exception:
+            logger.exception("Groq query entity extraction failed: model=%s", self.extraction_model)
+            raise
 
         content = response.choices[0].message.content
 
         if not content:
+            logger.warning("Groq returned an empty query entity response")
             raise ValueError("Groq returned an empty response.")
 
         try:
             data = json.loads(content)
         except json.JSONDecodeError as exc:
-            print("Invalid Groq JSON:")
-            print(content)
+            logger.warning("Groq returned invalid query entity JSON: response_chars=%d", len(content))
             raise ValueError("Groq returned invalid JSON.") from exc
 
-        return data.get("entities", [])
+        entities = data.get("entities", [])
+        logger.debug("Query entity extraction completed: entity_count=%d", len(entities))
+        return entities
 
     def extract_graph(
     self,
     prompt: str,
 ) -> GraphExtraction:
 
-        response = self.client.chat.completions.create(
+        logger.debug("Requesting graph extraction: model=%s", self.extraction_model)
+        try:
+            response = self.client.chat.completions.create(
             model=self.extraction_model,
             messages=[
                 {
@@ -90,16 +102,19 @@ class GroqClient:
             ],
             temperature=0,
             max_tokens=2048,
-        )
+            )
+        except Exception:
+            logger.exception("Groq graph extraction request failed: model=%s", self.extraction_model)
+            raise
 
         choice = response.choices[0]
 
         content = choice.message.content
 
-        print("Groq finish reason:", choice.finish_reason)
-        print("Groq response:", content)
+        logger.debug("Groq graph extraction response received: finish_reason=%s", choice.finish_reason)
 
         if not content:
+            logger.warning("Groq returned an empty graph extraction response: finish_reason=%s", choice.finish_reason)
             raise ValueError(
                 f"Groq returned an empty response. "
                 f"Finish reason: {choice.finish_reason}"
@@ -109,17 +124,24 @@ class GroqClient:
             data = json.loads(content)
 
         except json.JSONDecodeError as exc:
-            print("Invalid Groq JSON:")
-            print(content)
+            logger.warning("Groq returned invalid graph extraction JSON: response_chars=%d", len(content))
 
             raise ValueError(
                 "Groq returned invalid JSON."
             ) from exc
 
-        return GraphExtraction.model_validate(data)
+        extraction = GraphExtraction.model_validate(data)
+        logger.debug(
+            "Graph extraction completed: entities=%d relationships=%d",
+            len(extraction.entities),
+            len(extraction.relationships),
+        )
+        return extraction
 
     def generate_answer(self, prompt: str) -> str:
-        response = self.client.chat.completions.create(
+        logger.debug("Requesting answer generation: model=%s", self.model)
+        try:
+            response = self.client.chat.completions.create(
             model=self.model,
             messages=[
                 {
@@ -136,14 +158,20 @@ class GroqClient:
             ],
             temperature=0,
             max_tokens=2048,
-        )
+            )
+        except Exception:
+            logger.exception("Groq answer generation failed: model=%s", self.model)
+            raise
 
         content = response.choices[0].message.content
 
         if not content:
+            logger.warning("Groq returned an empty answer")
             raise ValueError("Groq returned an empty answer.")
 
-        return content.strip()
+        answer = content.strip()
+        logger.debug("Answer generation completed: answer_chars=%d", len(answer))
+        return answer
 
 
 groq_client = GroqClient()

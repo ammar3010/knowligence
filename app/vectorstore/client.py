@@ -1,10 +1,13 @@
 import uuid
+import logging
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 
 from app.core.config import get_settings
 from app.models.documents import DocumentChunk
+
+logger = logging.getLogger(__name__)
 
 
 def to_uuid(id_val: str) -> str:
@@ -37,6 +40,7 @@ class QdrantVectorStore:
             self.client.get_collections()
             return True
         except Exception:
+            logger.exception("Qdrant connectivity check failed")
             return False
 
     def create_collection(
@@ -44,7 +48,11 @@ class QdrantVectorStore:
         vector_size: int,
     ) -> None:
 
-        collections = self.client.get_collections()
+        try:
+            collections = self.client.get_collections()
+        except Exception:
+            logger.exception("Failed to inspect Qdrant collections")
+            raise
 
         existing = {
             collection.name
@@ -52,15 +60,21 @@ class QdrantVectorStore:
         }
 
         if self.collection_name in existing:
+            logger.debug("Qdrant collection already exists: collection=%s", self.collection_name)
             return
 
-        self.client.create_collection(
-            collection_name=self.collection_name,
-            vectors_config=VectorParams(
-                size=vector_size,
-                distance=Distance.COSINE,
-            ),
-        )
+        try:
+            self.client.create_collection(
+                collection_name=self.collection_name,
+                vectors_config=VectorParams(
+                    size=vector_size,
+                    distance=Distance.COSINE,
+                ),
+            )
+        except Exception:
+            logger.exception("Failed to create Qdrant collection: collection=%s", self.collection_name)
+            raise
+        logger.info("Qdrant collection created: collection=%s vector_size=%d", self.collection_name, vector_size)
 
     def upsert_chunks(
         self,
@@ -95,10 +109,19 @@ class QdrantVectorStore:
             )
 
         if points:
-            self.client.upsert(
-                collection_name=self.collection_name,
-                points=points,
-            )
+            logger.debug("Upserting vectors: collection=%s points=%d", self.collection_name, len(points))
+            try:
+                self.client.upsert(
+                    collection_name=self.collection_name,
+                    points=points,
+                )
+            except Exception:
+                logger.exception(
+                    "Qdrant vector upsert failed: collection=%s points=%d",
+                    self.collection_name,
+                    len(points),
+                )
+                raise
 
     def search(
         self,
@@ -106,12 +129,22 @@ class QdrantVectorStore:
         limit: int = 8,
     ):
 
-        return self.client.query_points(
-            collection_name=self.collection_name,
-            query=embedding,
-            limit=limit,
-            with_payload=True,
-        ).points
+        try:
+            points = self.client.query_points(
+                collection_name=self.collection_name,
+                query=embedding,
+                limit=limit,
+                with_payload=True,
+            ).points
+        except Exception:
+            logger.exception("Qdrant search failed: collection=%s limit=%d", self.collection_name, limit)
+            raise
+        logger.debug("Qdrant search completed: collection=%s results=%d", self.collection_name, len(points))
+        return points
+
+    def close(self) -> None:
+        self.client.close()
+        logger.info("Qdrant client closed")
 
 
 qdrant_client = QdrantVectorStore()

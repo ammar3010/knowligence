@@ -1,3 +1,5 @@
+import logging
+
 from app.retrieval.hybrid import HybridRetriever
 from app.llm.groq import groq_client
 from app.workflows.state import GraphRAGState
@@ -6,14 +8,17 @@ from app.retrieval.context import build_context
 from app.retrieval.response import build_graph_paths, build_sources
 
 retriever = HybridRetriever()
+logger = logging.getLogger(__name__)
 
 
 def retrieve_node(state: GraphRAGState) -> GraphRAGState:
+    logger.debug("Workflow retrieval stage started")
     result = retriever.retrieve(
         query=state["query"],
         top_k=5,
         max_hops=2,
     )
+    logger.debug("Workflow retrieval stage completed: entities=%d", len(result["entity_names"]))
 
     return {
         **state,
@@ -25,6 +30,7 @@ def retrieve_node(state: GraphRAGState) -> GraphRAGState:
 
 def context_node(state: GraphRAGState) -> GraphRAGState:
     context = build_context(state)
+    logger.debug("Workflow context stage completed: context_chars=%d", len(context))
 
     return {
         **state,
@@ -32,6 +38,7 @@ def context_node(state: GraphRAGState) -> GraphRAGState:
     }
 
 def reasoning_node(state: GraphRAGState) -> GraphRAGState:
+    logger.debug("Workflow reasoning stage started")
     history = state.get("chat_history", [])
 
     formatted_history = "\n".join(
@@ -49,6 +56,7 @@ def reasoning_node(state: GraphRAGState) -> GraphRAGState:
     )
 
     answer = groq_client.generate_answer(prompt)
+    logger.debug("Workflow reasoning stage completed")
 
     return {
         **state,
@@ -56,8 +64,11 @@ def reasoning_node(state: GraphRAGState) -> GraphRAGState:
     }
 
 def response_node(state: GraphRAGState) -> GraphRAGState:
+    sources = build_sources(state)
+    graph_paths = build_graph_paths(state)
+    logger.debug("Workflow response assembled: sources=%d graph_paths=%d", len(sources), len(graph_paths))
     return {
         **state,
-        "sources": build_sources(state),
-        "graph_paths": build_graph_paths(state),
+        "sources": sources,
+        "graph_paths": graph_paths,
     }

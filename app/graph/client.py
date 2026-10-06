@@ -1,6 +1,10 @@
+import logging
+
 from neo4j import Driver, GraphDatabase
 
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 class Neo4jClient:
@@ -20,6 +24,7 @@ class Neo4jClient:
             self.driver.verify_connectivity()
             return True
         except Exception:
+            logger.exception("Neo4j connectivity check failed")
             return False
 
     def execute(
@@ -27,16 +32,23 @@ class Neo4jClient:
         query: str,
         parameters: dict | None = None,
     ):
-        with self.driver.session() as session:
-            result = session.run(
-                query,
-                parameters or {},
-            )
+        try:
+            with self.driver.session() as session:
+                result = session.run(
+                    query,
+                    parameters or {},
+                )
 
-            return result.data()
+                records = result.data()
+                logger.debug("Neo4j query completed: rows=%d", len(records))
+                return records
+        except Exception:
+            logger.exception("Neo4j query execution failed")
+            raise
 
     def close(self) -> None:
         self.driver.close()
+        logger.info("Neo4j driver closed")
 
 
 neo4j_client = Neo4jClient()

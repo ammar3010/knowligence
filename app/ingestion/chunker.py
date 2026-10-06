@@ -1,10 +1,13 @@
 import re
+import logging
 
 import tiktoken
 
 from app.core.config import get_settings
 from app.models.documents import Document, DocumentChunk
 from app.utilities.ids import generate_id
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentChunker:
@@ -75,6 +78,13 @@ class DocumentChunker:
         self,
         document: Document,
     ) -> list[DocumentChunk]:
+        logger.debug(
+            "Chunking document: document_id=%s content_chars=%d chunk_size=%d overlap=%d",
+            document.id,
+            len(document.content),
+            self.chunk_size,
+            self.chunk_overlap,
+        )
 
         paragraphs = self._split_paragraphs(
             document.content
@@ -170,6 +180,7 @@ class DocumentChunker:
                 )
             )
 
+        logger.debug("Chunking finished: document_id=%s chunks=%d", document.id, len(chunks))
         return chunks
 
     def _create_chunk(
